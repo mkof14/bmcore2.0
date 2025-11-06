@@ -1,0 +1,10 @@
+{
+  "status": "ok",
+  "timestamp": "2025-11-02T12:00:00Z",
+  "version": "1.0.0",
+  "services": {
+    "database": "healthy",
+    "stripe": "healthy",
+    "ai": "healthy"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "ok": true,
+  "status": "healthy",
+  "timestamp": "2025-11-02T00:00:00.000Z",
+  "service": "biomathcore-platform",
+  "version": "1.0.0"
+}

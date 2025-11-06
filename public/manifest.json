@@ -1,0 +1,90 @@
+{
+  "name": "BioMath Core - AI Health Intelligence Platform",
+  "short_name": "BioMath Core",
+  "description": "AI-powered personalized health intelligence. Transform your health data into actionable insights with comprehensive health tracking and analysis.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["health", "medical", "lifestyle", "productivity"],
+  "screenshots": [
+    {
+      "src": "/Screenshot 2025-10-22 at 13.22.17.png",
+      "sizes": "2880x1800",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "AI Health Assistant",
+      "short_name": "AI Chat",
+      "description": "Chat with your AI health advisor",
+      "url": "/member-zone?section=ai-advisor",
+      "icons": [
+        {
+          "src": "/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Health Reports",
+      "short_name": "Reports",
+      "description": "View your health reports",
+      "url": "/member-zone?section=my-reports",
+      "icons": [
+        {
+          "src": "/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Second Opinion",
+      "short_name": "Opinion",
+      "description": "Get a second medical opinion",
+      "url": "/member-zone?section=second-opinion",
+      "icons": [
+        {
+          "src": "/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "share_target": {
+    "action": "/member-zone",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}

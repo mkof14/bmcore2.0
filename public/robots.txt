@@ -1,0 +1,81 @@
+# BioMath Core - Robots.txt
+# https://biomathcore.com/robots.txt
+# Last Updated: 2025-10-23
+
+# Default crawler rules
+User-agent: *
+Allow: /
+
+# Allow all main pages
+Allow: /about
+Allow: /services
+Allow: /pricing
+Allow: /science
+Allow: /blog
+Allow: /news
+Allow: /careers
+Allow: /contact
+Allow: /faq
+Allow: /learning-center
+Allow: /devices
+Allow: /investors
+Allow: /partnership
+Allow: /ambassador
+Allow: /referral
+
+# Allow legal pages
+Allow: /privacy-policy
+Allow: /terms-of-service
+Allow: /data-privacy
+Allow: /gdpr
+Allow: /hipaa-notice
+Allow: /security
+Allow: /disclaimer
+Allow: /trust-safety
+
+# Disallow member areas
+Disallow: /member-zone
+Disallow: /admin-panel
+Disallow: /command-center
+Disallow: /sign-in
+Disallow: /sign-up
+
+# Disallow API endpoints and internal paths
+Disallow: /api/
+Disallow: /_next/
+Disallow: /assets/
+Disallow: /*.json$
+Disallow: /*.xml$
+Disallow: /*?*utm_
+Disallow: /*?*ref=
+Disallow: /*?*source=
+
+# Googlebot specific rules
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Bingbot specific rules
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Allow Google Image Bot
+User-agent: Googlebot-Image
+Allow: /
+
+# Disallow bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Sitemap location
+Sitemap: https://biomathcore.com/sitemap.xml

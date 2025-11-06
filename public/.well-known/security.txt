@@ -1,0 +1,11 @@
+Contact: mailto:security@biomathcore.com
+Expires: 2026-12-31T23:59:59.000Z
+Preferred-Languages: en, es, fr
+Canonical: https://biomathcore.com/.well-known/security.txt
+Policy: https://biomathcore.com/security-policy
+Acknowledgments: https://biomathcore.com/security-acknowledgments
+
+# Security Contact Information
+# If you discover a security vulnerability, please report it to security@biomathcore.com
+# We take security seriously and will respond within 24 hours.
+# Please allow us time to address the issue before public disclosure.
