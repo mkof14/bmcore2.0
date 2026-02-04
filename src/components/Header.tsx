@@ -1,5 +1,5 @@
-import { Menu, X, Moon, Sun, Activity, LogOut } from 'lucide-react';
-import { useState } from 'react';
+import { Menu, X, Moon, Sun, LogOut } from 'lucide-react';
+import { useState, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSession } from '../hooks/useSession';
 import { supabase } from '../lib/supabase';
@@ -14,10 +14,10 @@ export default function Header({ onNavigate, currentPage }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const user = useSession();
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     await supabase.auth.signOut();
     onNavigate('home');
-  };
+  }, [onNavigate]);
 
   const navItems = [
     { name: 'Home', path: 'home' },
@@ -85,9 +85,9 @@ export default function Header({ onNavigate, currentPage }: HeaderProps) {
             ) : (
               <button
                 onClick={() => onNavigate('signin')}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors opacity-5 hover:opacity-100"
               >
-                Sign In / Sign Up
+                Sign In/Up
               </button>
             )}
           </div>
@@ -146,9 +146,9 @@ export default function Header({ onNavigate, currentPage }: HeaderProps) {
                       onNavigate('signin');
                       setMobileMenuOpen(false);
                     }}
-                    className="px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md text-left transition-colors w-full"
+                    className="px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md text-left transition-colors w-full opacity-5 hover:opacity-100"
                   >
-                    Sign In / Sign Up
+                    Sign In/Up
                   </button>
                 )}
               </div>

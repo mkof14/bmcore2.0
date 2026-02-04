@@ -1,37 +1,27 @@
-import { Heart, Sparkles, TrendingUp, Brain, Dumbbell, Flower2, User, Droplets, Apple, Moon, Leaf, Users, Activity, Zap, HeartHandshake, Eye, Smartphone, Fingerprint, Target, Blend } from 'lucide-react';
+import { Heart, Sparkles, TrendingUp, Brain, Dumbbell, Flower2, User, Droplets, Apple, Moon, Leaf, Users, Activity, Zap, HeartHandshake, Eye, Smartphone, Fingerprint, Target, Blend, LucideProps } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { FC } from 'react';
 
 interface HealthCategoriesProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, categoryId?: string) => void;
+}
+
+interface Category {
+    id: string;
+    name: string;
+    icon: FC<LucideProps>;
+    gradient: string;
+    iconColor: string;
+    glowColor: string;
+    shadowColor: string;
+    bgImage: string;
 }
 
 export default function HealthCategories({ onNavigate }: HealthCategoriesProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // BACKUP URLs (original version):
-  // critical-health: https://images.pexels.com/photos/7108344/pexels-photo-7108344.jpeg?auto=compress&cs=tinysrgb&w=400
-  // everyday-wellness: https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=400
-  // longevity-aging: https://images.pexels.com/photos/3943716/pexels-photo-3943716.jpeg?auto=compress&cs=tinysrgb&w=400
-  // mental-wellness: https://images.pexels.com/photos/3760607/pexels-photo-3760607.jpeg?auto=compress&cs=tinysrgb&w=400
-  // fitness-performance: https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=400
-  // womens-health: https://images.pexels.com/photos/3760259/pexels-photo-3760259.jpeg?auto=compress&cs=tinysrgb&w=400
-  // mens-health: https://images.pexels.com/photos/1547248/pexels-photo-1547248.jpeg?auto=compress&cs=tinysrgb&w=400
-  // beauty-skincare: https://images.pexels.com/photos/3762879/pexels-photo-3762879.jpeg?auto=compress&cs=tinysrgb&w=400
-  // nutrition-diet: https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400
-  // sleep-recovery: https://images.pexels.com/photos/3771115/pexels-photo-3771115.jpeg?auto=compress&cs=tinysrgb&w=400
-  // environmental-health: https://images.pexels.com/photos/1108572/pexels-photo-1108572.jpeg?auto=compress&cs=tinysrgb&w=400
-  // family-health: https://images.pexels.com/photos/1648387/pexels-photo-1648387.jpeg?auto=compress&cs=tinysrgb&w=400
-  // preventive-medicine: https://images.pexels.com/photos/7108337/pexels-photo-7108337.jpeg?auto=compress&cs=tinysrgb&w=400
-  // biohacking: https://images.pexels.com/photos/3760072/pexels-photo-3760072.jpeg?auto=compress&cs=tinysrgb&w=400
-  // senior-care: https://images.pexels.com/photos/6032877/pexels-photo-6032877.jpeg?auto=compress&cs=tinysrgb&w=400
-  // eye-health: https://images.pexels.com/photos/1841645/pexels-photo-1841645.jpeg?auto=compress&cs=tinysrgb&w=400
-  // digital-therapeutics: https://images.pexels.com/photos/4195325/pexels-photo-4195325.jpeg?auto=compress&cs=tinysrgb&w=400
-  // general-sexual: https://images.pexels.com/photos/3259580/pexels-photo-3259580.jpeg?auto=compress&cs=tinysrgb&w=400
-  // mens-sexual-health: https://images.pexels.com/photos/6975474/pexels-photo-6975474.jpeg?auto=compress&cs=tinysrgb&w=400
-  // womens-sexual-health: https://images.pexels.com/photos/3894378/pexels-photo-3894378.jpeg?auto=compress&cs=tinysrgb&w=400
-
-  const categories = [
+  const categories: Category[] = [
     {
       id: 'critical-health',
       name: 'Critical Health',

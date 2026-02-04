@@ -1,7 +1,45 @@
-import { useState, useEffect, useRef } from 'react';
-import { Send, Mic, Volume2, RefreshCw, User, Stethoscope, Heart, Users, Sparkles, Copy, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Send, Mic, AlertCircle, Shield, Scale, Volume2 } from 'lucide-react';
+import AudioVisualizer from './AudioVisualizer';
+import TypingIndicator from './TypingIndicator';
 import { supabase } from '../lib/supabase';
-import type { AssistantPersona, ChatMessage, ChatSession } from '../types/database';
+import { generateDualOpinion } from '../lib/dualOpinionEngine';
+import DualOpinionView from './DualOpinionView';
+import type { AssistantPersona } from '../types/database';
+import type { Opinion, OpinionDiff } from '../lib/dualOpinionEngine';
+
+// Define strict types for messages
+interface BaseMessage {
+  id: string;
+  timestamp: Date;
+  isTyping?: boolean;
+}
+
+interface UserMessage extends BaseMessage {
+  role: 'user';
+  content: string;
+}
+
+interface AssistantMessage extends BaseMessage {
+  role: 'assistant';
+  content: string;
+  type?: undefined;
+}
+
+interface DualOpinionMessage extends BaseMessage {
+  role: 'assistant';
+  type: 'dual-opinion';
+  opinionA: Opinion;
+  opinionB: Opinion;
+  diff: OpinionDiff;
+}
+
+interface SystemMessage extends BaseMessage {
+  role: 'system';
+  content: string;
+}
+
+type Message = UserMessage | AssistantMessage | DualOpinionMessage | SystemMessage;
 
 interface AIHealthAssistantProps {
   isOpen: boolean;
@@ -10,19 +48,235 @@ interface AIHealthAssistantProps {
 
 export default function AIHealthAssistant({ isOpen, onClose }: AIHealthAssistantProps) {
   const [personas, setPersonas] = useState<AssistantPersona[]>([]);
-  const [selectedPersona, setSelectedPersona] = useState<AssistantPersona | null>(null);
-  const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSecondOpinion, setShowSecondOpinion] = useState(false);
-  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [dualOpinionEnabled, setDualOpinionEnabled] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
+  const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+  const [micIntensity, setMicIntensity] = useState(0.5);
+
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const addWelcomeMessage = () => {
+    setMessages([{
+      id: 'welcome',
+      role: 'assistant',
+      content: 'Hello! I\'m your AI Health Advisor with dual-opinion capability. I can provide you with two expert perspectives on your health questions. Toggle "Second Opinion" to get comprehensive insights from multiple AI reasoning approaches.',
+      timestamp: new Date(),
+      isTyping: false
+    }]);
+  };
+
+  const generateSingleResponse = (input: string, persona: AssistantPersona | null): string => {
+    const msg = input.toLowerCase();
+    console.log('Generating single response for persona:', persona?.name);
+
+    if (msg.includes('energy') || msg.includes('tired')) {
+      return 'Afternoon energy dips are common and often related to circadian rhythms, meal composition, and sleep quality. Consider:\n\n• Balanced lunch with protein and complex carbs\n• 10-minute walk after eating\n• Hydration check (often overlooked!)\n• Consistent sleep schedule\n\nWould you like me to analyze this in more depth with two expert opinions? Toggle "Second Opinion" and ask again!';
+    }
+
+    if (msg.includes('sleep')) {
+      return 'Sleep quality is multifactorial. Key evidence-based recommendations:\n\n• Fixed wake time (±15 min) including weekends\n• Cool bedroom (65-68°F)\n• Blue light reduction 2h before bed\n• Morning bright light exposure\n\nFor a comprehensive analysis with multiple perspectives, enable "Second Opinion" mode!';
+    }
+
+    return 'I\'m here to help with your wellness questions. Could you provide more details about your situation?\n\nTip: Enable "Second Opinion" mode to get two different AI perspectives - one evidence-based and one contextual/practical.';
+  };
+
+  const speakText = useCallback((text: string) => {
+    if (isSpeakerMuted || !('speechSynthesis' in window)) return;
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.9;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    utterance.lang = 'en-US';
+
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(voice =>
+      voice.name.includes('Microsoft David') ||
+      voice.name.includes('Google US English') ||
+      voice.name.includes('Alex') ||
+      voice.lang === 'en-US'
+    );
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  }, [isSpeakerMuted]);
+
+  const handleSendMessage = useCallback(async () => {
+    if (!inputMessage.trim()) return;
+
+    const userMsg: UserMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: inputMessage.trim(),
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMsg]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    setTimeout(() => {
+      if (dualOpinionEnabled && personas.length >= 2) {
+        const personaA = personas.find(p => p.reasoning_style === 'evidence_based') || personas[0];
+        const personaB = personas.find(p => p.reasoning_style === 'contextual') || personas[1];
+
+        const { opinionA, opinionB, diff } = generateDualOpinion(
+          userMsg.content,
+          personaA,
+          personaB
+        );
+
+        const dualOpinionMsg: DualOpinionMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          type: 'dual-opinion',
+          opinionA,
+          opinionB,
+          diff,
+          timestamp: new Date(),
+          isTyping: false
+        };
+
+        setMessages(prev => [...prev, dualOpinionMsg]);
+      } else {
+        const defaultPersona = personas[0] || null;
+        const response = generateSingleResponse(userMsg.content, defaultPersona);
+
+        const assistantMsg: AssistantMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: response,
+          timestamp: new Date(),
+          isTyping: true
+        };
+
+        setMessages(prev => [...prev, assistantMsg]);
+
+        setTimeout(() => {
+          speakText(response);
+        }, response.length * 30);
+      }
+
+      setIsLoading(false);
+    }, 800);
+  }, [inputMessage, dualOpinionEnabled, personas, speakText]);
+
+  const stopRecording = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+    }
+    setIsUserSpeaking(false);
+    setMicIntensity(0.5);
+  }, []);
+
+  const startRecording = useCallback(async () => {
+    try {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+        setIsRecording(false);
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => console.log('Speech recognition started');
+
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let finalTranscript = '';
+        setIsUserSpeaking(true);
+        setMicIntensity(0.8);
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + ' ';
+          }
+        }
+
+        if (finalTranscript) setInputMessage(prev => prev + finalTranscript);
+
+        silenceTimerRef.current = setTimeout(() => {
+          setIsUserSpeaking(false);
+          setMicIntensity(0.3);
+          if (inputMessage.trim()) {
+            handleSendMessage();
+            setIsRecording(false);
+          }
+        }, 2000);
+      };
+
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.error('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          alert('Microphone access denied. Please allow microphone access in your browser settings.');
+        }
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        if (isRecording) recognition.start();
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      analyser.fftSize = 256;
+      microphone.connect(analyser);
+      audioContextRef.current = audioContext;
+
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      alert('Could not access microphone. Please check permissions.');
+      setIsRecording(false);
+    }
+  }, [isRecording, inputMessage, handleSendMessage]);
 
   useEffect(() => {
+    const loadPersonas = async () => {
+      const { data } = await supabase.from('assistant_personas').select('*').eq('active', true).order('sort_order');
+      if (data) setPersonas(data);
+    };
+
     if (isOpen) {
       loadPersonas();
-      loadOrCreateSession();
+      addWelcomeMessage();
     }
   }, [isOpen]);
 
@@ -30,381 +284,201 @@ export default function AIHealthAssistant({ isOpen, onClose }: AIHealthAssistant
     scrollToBottom();
   }, [messages]);
 
-  const loadPersonas = async () => {
-    const { data } = await supabase
-      .from('assistant_personas')
-      .select('*')
-      .eq('active', true)
-      .order('sort_order');
-
-    if (data) {
-      setPersonas(data);
-      if (!selectedPersona && data.length > 0) {
-        setSelectedPersona(data[0]);
-      }
-    }
-  };
-
-  const loadOrCreateSession = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: sessions } = await supabase
-      .from('chat_sessions')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .order('last_message_at', { ascending: false })
-      .limit(1);
-
-    if (sessions && sessions.length > 0) {
-      setCurrentSession(sessions[0]);
-      loadMessages(sessions[0].id);
+  useEffect(() => {
+    if (isRecording) {
+      startRecording();
     } else {
-      const { data: newSession } = await supabase
-        .from('chat_sessions')
-        .insert({
-          user_id: user.id,
-          title: 'Health Consultation',
-          status: 'active'
-        })
-        .select()
-        .single();
-
-      if (newSession) {
-        setCurrentSession(newSession);
-        addWelcomeMessage(newSession.id, user.id);
-      }
+      stopRecording();
     }
-  };
-
-  const loadMessages = async (sessionId: string) => {
-    const { data } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .eq('session_id', sessionId)
-      .order('created_at', { ascending: true });
-
-    if (data) {
-      setMessages(data);
-    }
-  };
-
-  const addWelcomeMessage = async (sessionId: string, userId: string) => {
-    const welcomeMessage: Partial<ChatMessage> = {
-      session_id: sessionId,
-      user_id: userId,
-      role: 'assistant',
-      content: 'Hello! I\'m your AI Health Advisor. I can help you understand your health data, answer wellness questions, and provide evidence-based guidance. How can I assist you today?',
-      persona_id: selectedPersona?.id,
-      created_at: new Date().toISOString()
+    return () => {
+      stopRecording(); // Cleanup on unmount
     };
+  }, [isRecording, startRecording, stopRecording]);
 
-    const { data } = await supabase
-      .from('chat_messages')
-      .insert(welcomeMessage)
-      .select()
-      .single();
-
-    if (data) {
-      setMessages([data]);
+  const toggleSpeaker = () => {
+    setIsSpeakerMuted(!isSpeakerMuted);
+    if (!isSpeakerMuted && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !currentSession || !selectedPersona) return;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const userMessage: Partial<ChatMessage> = {
-      session_id: currentSession.id,
-      user_id: user.id,
-      role: 'user',
-      content: inputMessage.trim(),
-      created_at: new Date().toISOString()
+  const handleMerge = (preference: 'A' | 'B' | 'merge') => {
+    const confirmMsg: SystemMessage = {
+      id: Date.now().toString(),
+      role: 'system',
+      content: `You\'ve adopted ${preference === 'merge' ? 'the merged' : `Opinion ${preference}`} approach. Your preferences have been saved.`,
+      timestamp: new Date()
     };
-
-    const { data: savedUserMessage } = await supabase
-      .from('chat_messages')
-      .insert(userMessage)
-      .select()
-      .single();
-
-    if (savedUserMessage) {
-      setMessages(prev => [...prev, savedUserMessage]);
-      setInputMessage('');
-      setIsLoading(true);
-
-      setTimeout(async () => {
-        const assistantResponse = generateMockResponse(inputMessage, selectedPersona);
-
-        const assistantMessage: Partial<ChatMessage> = {
-          session_id: currentSession.id,
-          user_id: user.id,
-          role: 'assistant',
-          content: assistantResponse,
-          persona_id: selectedPersona.id,
-          created_at: new Date().toISOString()
-        };
-
-        const { data: savedAssistantMessage } = await supabase
-          .from('chat_messages')
-          .insert(assistantMessage)
-          .select()
-          .single();
-
-        if (savedAssistantMessage) {
-          setMessages(prev => [...prev, savedAssistantMessage]);
-        }
-
-        setIsLoading(false);
-      }, 1500);
-    }
+    setMessages(prev => [...prev, confirmMsg]);
   };
 
-  const handleRequestSecondOpinion = async (messageId: string) => {
-    if (!currentSession || !selectedPersona) return;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const originalMessage = messages.find(m => m.id === messageId);
-    if (!originalMessage) return;
-
-    setIsLoading(true);
-
-    const alternativePersona = personas.find(p => p.id !== selectedPersona.id);
-    if (!alternativePersona) return;
-
-    setTimeout(async () => {
-      const secondOpinionResponse = generateMockResponse(
-        originalMessage.content,
-        alternativePersona,
-        true
-      );
-
-      const secondOpinionMessage: Partial<ChatMessage> = {
-        session_id: currentSession.id,
-        user_id: user.id,
-        role: 'assistant',
-        content: secondOpinionResponse,
-        persona_id: alternativePersona.id,
-        is_second_opinion: true,
-        parent_message_id: messageId,
-        created_at: new Date().toISOString()
-      };
-
-      const { data: savedMessage } = await supabase
-        .from('chat_messages')
-        .insert(secondOpinionMessage)
-        .select()
-        .single();
-
-      if (savedMessage) {
-        setMessages(prev => [...prev, savedMessage]);
-      }
-
-      setIsLoading(false);
-    }, 2000);
+  const handleCreateReport = () => {
+    const confirmMsg: SystemMessage = {
+      id: Date.now().toString(),
+      role: 'system',
+      content: '📊 Report generation feature coming soon! This will create a detailed health report based on our conversation.',
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, confirmMsg]);
   };
 
-  const generateMockResponse = (
-    userInput: string,
-    persona: AssistantPersona,
-    isSecondOpinion: boolean = false
-  ): string => {
-    const input = userInput.toLowerCase();
-
-    if (isSecondOpinion) {
-      if (input.includes('energy') || input.includes('tired')) {
-        return `[${persona.name_en} - Second Opinion]\n\nI'd like to offer a different perspective. While the previous advice is valid, let me add a more holistic view:\n\nYour afternoon energy dip could be related to your meal composition and stress levels. Consider not just what you eat, but when and how you eat. Eating while stressed or rushing can affect digestion and energy.\n\nI'd suggest:\n1. Take a 5-minute break before lunch to de-stress\n2. Eat mindfully without screens\n3. Include some movement after eating (even a short walk)\n4. Check your hydration - often overlooked!\n\nThis approach addresses both physiological and behavioral factors.`;
-      }
-    }
-
-    if (input.includes('sleep') || input.includes('tired')) {
-      if (persona.role_type === 'doctor') {
-        return 'Based on your query about fatigue, let me provide an evidence-based perspective. Sleep quality is influenced by multiple factors: sleep duration (7-9 hours recommended), sleep consistency, circadian rhythm alignment, and sleep environment. Research shows that irregular sleep schedules can reduce sleep quality by up to 30%. I\'d recommend tracking your sleep patterns for a week and looking for correlations with energy levels. Would you like me to generate a detailed sleep analysis report?';
-      } else if (persona.role_type === 'nurse') {
-        return 'I hear you\'re feeling tired! Let\'s explore this together. When do you usually feel most fatigued - is it throughout the day or at specific times? Have you noticed any changes in your routine recently? Sometimes simple adjustments like consistent wake times, limiting screen time before bed, or a relaxing evening routine can make a big difference. Tell me more about your typical day, and we can identify some practical steps you can take right away.';
-      }
-    }
-
-    if (input.includes('energy') || input.includes('afternoon')) {
-      if (persona.role_type === 'doctor') {
-        return 'Afternoon energy dips, often called the "post-lunch dip," are well-documented in chronobiology research. They\'re linked to your circadian rhythm and postprandial (after-eating) glucose responses. Key evidence-based strategies: 1) Balanced meals with protein and fiber to stabilize blood sugar, 2) Strategic light exposure (natural light helps), 3) Brief movement breaks (studies show 5-minute walks improve alertness by 20%). Avoid high-glycemic carbs at lunch. Would you like a personalized nutrition analysis?';
-      } else if (persona.role_type === 'coach') {
-        return 'Great question about afternoon energy! Here\'s my coaching approach: Let\'s build a sustainable "energy protocol." Start small: 1) This week, try a 10-minute walk after lunch - track your afternoon energy on a 1-10 scale. 2) Swap one refined carb for a protein + veggie combo at lunch. 3) Set a 3pm "power posture" reminder - stand, stretch, breathe. We\'ll review what worked best for YOU and build from there. Small wins lead to big changes!';
-      }
-    }
-
-    return `Thank you for your question. As your ${persona.role_type}, I'm here to provide ${persona.role_type === 'doctor' ? 'evidence-based guidance' : persona.role_type === 'nurse' ? 'practical support' : 'motivational coaching'}. Could you provide more details about your situation so I can give you more personalized advice?`;
-  };
-
-  const handleCopyMessage = (messageId: string, content: string) => {
-    navigator.clipboard.writeText(content);
-    setCopiedMessageId(messageId);
-    setTimeout(() => setCopiedMessageId(null), 2000);
-  };
-
-  const getPersonaIcon = (roleType: string) => {
-    switch (roleType) {
-      case 'doctor':
-        return <Stethoscope className="h-5 w-5" />;
-      case 'nurse':
-        return <Heart className="h-5 w-5" />;
-      case 'coach':
-        return <Users className="h-5 w-5" />;
-      default:
-        return <User className="h-5 w-5" />;
-    }
+  const handleAddGoals = (recommendations: string[]) => {
+    const confirmMsg: SystemMessage = {
+      id: Date.now().toString(),
+      role: 'system',
+      content: `🎯 Goal creation feature coming soon! ${recommendations.length} recommendations will be converted into trackable goals.`,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, confirmMsg]);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-end p-6">
-      <div className="w-full max-w-2xl h-[600px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-700 p-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur">
-              <Sparkles className="h-6 w-6 text-white" />
+    <>
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-5xl h-[85vh] pointer-events-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl shadow-2xl border border-orange-600/30 flex flex-col overflow-hidden">
+          <div className="relative bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-b border-orange-600/30 p-6 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-900/10 via-transparent to-orange-900/10"></div>
+
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-20 h-20 flex items-center justify-center">
+                  <img src="/Copilot_20251022_203134.png" alt="AI Health Advisor" className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-xl">AI Health Advisor</h3>
+                  <p className="text-gray-400 text-sm">Advanced Wellness Intelligence with Dual Opinion</p>
+                </div>
+              </div>
+              <button onClick={onClose} className="text-gray-400 hover:text-white hover:bg-gray-800 rounded-xl p-2 transition-all">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
             </div>
-            <div>
-              <h3 className="text-white font-semibold">AI Health Advisor</h3>
-              <p className="text-white/80 text-xs">
-                {selectedPersona ? selectedPersona.name_en : 'Choose a persona'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-          >
-            ✕
-          </button>
-        </div>
 
-        <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-          {personas.map(persona => (
-            <button
-              key={persona.id}
-              onClick={() => setSelectedPersona(persona)}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                selectedPersona?.id === persona.id
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              {getPersonaIcon(persona.role_type)}
-              <span className="text-sm font-medium">{persona.name_en}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message, index) => {
-            const persona = personas.find(p => p.id === message.persona_id);
-            const isUser = message.role === 'user';
-
-            return (
-              <div
-                key={message.id}
-                className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`flex items-start space-x-2 max-w-[80%] ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                  {!isUser && (
-                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                      message.is_second_opinion
-                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                    }`}>
-                      {persona && getPersonaIcon(persona.role_type)}
+            <div className="relative mt-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center space-x-2 bg-gray-800/50 backdrop-blur px-3 py-2 rounded-xl border border-gray-700/50">
+                  <Shield className="h-4 w-4 text-orange-500" />
+                  <span className="text-gray-300 text-xs font-medium">Wellness guidance • Not medical diagnosis</span>
+                </div>
+                <div className="flex items-center gap-3 bg-gray-800/50 backdrop-blur px-4 py-2.5 rounded-xl border border-gray-700/50">
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Mic className={`h-4 w-4 transition-all ${isUserSpeaking ? 'text-orange-400 animate-pulse' : isRecording ? 'text-orange-500' : 'text-gray-500'}`} />
+                      {isUserSpeaking && <div className="absolute -inset-1 bg-orange-500/30 rounded-full animate-ping"></div>}
                     </div>
-                  )}
-
-                  <div className={`group relative ${isUser ? 'bg-blue-600 text-white' : message.is_second_opinion ? 'bg-purple-50 dark:bg-purple-900/20 text-gray-900 dark:text-white border border-purple-200 dark:border-purple-800' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'} rounded-2xl px-4 py-3`}>
-                    <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-
-                    {!isUser && !message.is_second_opinion && (
-                      <div className="flex items-center space-x-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                        <button
-                          onClick={() => handleRequestSecondOpinion(message.id)}
-                          className="flex items-center space-x-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          <RefreshCw className="h-3 w-3" />
-                          <span>Second Opinion</span>
-                        </button>
-                        <button
-                          onClick={() => handleCopyMessage(message.id, message.content)}
-                          className="flex items-center space-x-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                        >
-                          {copiedMessageId === message.id ? (
-                            <CheckCircle className="h-3 w-3 text-green-600" />
-                          ) : (
-                            <Copy className="h-3 w-3" />
-                          )}
-                        </button>
-                      </div>
-                    )}
+                    <AudioVisualizer isActive={isRecording || isUserSpeaking} type="microphone" intensity={micIntensity} />
+                    {isUserSpeaking && <span className="text-xs text-orange-400 font-medium animate-pulse">Listening...</span>}
+                  </div>
+                  <div className="w-px h-5 bg-gray-700"></div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={toggleSpeaker} className="relative hover:scale-110 transition-transform" title={isSpeakerMuted ? 'Unmute speaker' : 'Mute speaker'}>
+                      {isSpeakerMuted ? (
+                        <div className="relative">
+                          <Volume2 className="h-4 w-4 text-gray-600" />
+                          <div className="absolute inset-0 flex items-center justify-center"><div className="w-5 h-0.5 bg-red-500 rotate-45"></div></div>
+                        </div>
+                      ) : (
+                        <Volume2 className={`h-4 w-4 ${isSpeaking ? 'text-blue-400' : 'text-gray-500'}`} />
+                      )}
+                    </button>
+                    <AudioVisualizer isActive={isSpeaking && !isSpeakerMuted} type="speaker" intensity={0.7} />
+                    {isSpeaking && !isSpeakerMuted && <span className="text-xs text-blue-400 font-medium">Speaking...</span>}
                   </div>
                 </div>
               </div>
-            );
-          })}
-
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-2xl px-4 py-3">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </div>
+              <button onClick={() => setDualOpinionEnabled(!dualOpinionEnabled)} className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all border ${dualOpinionEnabled ? 'bg-orange-600 border-orange-500 text-white shadow-lg shadow-orange-600/50' : 'bg-gray-800/50 border-gray-700/50 text-gray-300 hover:border-orange-600/50 hover:text-orange-400'}`}>
+                <Scale className="h-5 w-5" />
+                <span className="text-sm font-semibold">Second Opinion</span>
+                {dualOpinionEnabled && <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">ON</span>}
+              </button>
             </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-2">
-            <button
-              className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title="Voice input (coming soon)"
-            >
-              <Mic className="h-5 w-5" />
-            </button>
-
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Ask me anything about your health..."
-              className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              disabled={isLoading}
-            />
-
-            <button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              className="p-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Send className="h-5 w-5" />
-            </button>
           </div>
 
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-            AI wellness guidance • Not medical diagnosis • Consult healthcare professionals
-          </p>
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-950/50">
+            {messages.map((message) => {
+              if (message.type === 'dual-opinion') {
+                return (
+                  <div key={message.id} className="w-full">
+                    <div className="mb-3 flex items-center space-x-2 bg-gray-800/50 backdrop-blur px-3 py-2 rounded-xl border border-orange-600/30 w-fit">
+                      <Scale className="h-4 w-4 text-orange-500" />
+                      <span className="text-sm font-semibold text-white">Dual Opinion Analysis</span>
+                    </div>
+                    <DualOpinionView opinionA={message.opinionA} opinionB={message.opinionB} diff={message.diff} onMerge={handleMerge} onCreateReport={handleCreateReport} onAddGoals={handleAddGoals} />
+                  </div>
+                );
+              }
+
+              const isUser = message.role === 'user';
+              const isSystem = message.role === 'system';
+
+              if (isSystem) {
+                return (
+                  <div key={message.id} className="flex justify-center">
+                    <div className="max-w-md bg-gray-800/50 backdrop-blur border border-orange-600/30 rounded-xl px-4 py-3">
+                      <p className="text-sm text-gray-300 text-center">{message.content}</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={message.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[75%] ${isUser ? 'bg-gradient-to-br from-orange-600 to-orange-500 text-white shadow-lg shadow-orange-600/30' : 'bg-gray-800/80 backdrop-blur text-white border border-gray-700/50'} rounded-2xl px-5 py-3`}>
+                    {message.isTyping ? (
+                      <TypingIndicator text={(message as AssistantMessage).content} speed={30} onComplete={() => setMessages(prev => prev.map(msg => msg.id === message.id ? { ...msg, isTyping: false } : msg))} />
+                    ) : (
+                      <div className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="flex items-center space-x-3 bg-gray-800/80 backdrop-blur border border-gray-700/50 rounded-2xl px-5 py-3">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                  {dualOpinionEnabled && <span className="text-xs text-gray-400 ml-2">Analyzing with dual models...</span>}
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="relative p-6 border-t border-orange-600/30 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
+            <div className="absolute inset-0 bg-gradient-to-t from-orange-900/5 to-transparent"></div>
+
+            <div className="relative flex items-center space-x-3">
+              <button onClick={() => setIsRecording(!isRecording)} className={`relative p-3 bg-gray-800/50 hover:bg-gray-800 border rounded-xl transition-all ${isRecording ? 'text-orange-500 border-orange-600/50 shadow-lg shadow-orange-600/30' : 'text-gray-400 border-gray-700/50 hover:text-orange-500 hover:border-orange-600/50'}`} title={isRecording ? "Stop recording" : "Start voice input"}>
+                {isUserSpeaking && <div className="absolute -inset-0.5 bg-orange-500/20 rounded-xl animate-pulse"></div>}
+                <Mic className={`h-5 w-5 relative z-10 ${isUserSpeaking ? 'animate-pulse' : ''}`} />
+              </button>
+
+              <input type="text" value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()} placeholder={dualOpinionEnabled ? "Ask for dual expert opinions..." : "Ask me anything about your health..."} className="flex-1 px-5 py-3 rounded-xl border border-gray-700 bg-gray-800/50 text-white placeholder-gray-500 focus:ring-2 focus:ring-orange-600 focus:border-orange-600 transition-all" disabled={isLoading} />
+
+              <button onClick={handleSendMessage} disabled={!inputMessage.trim() || isLoading} className="p-3 bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-600/50 hover:shadow-xl hover:shadow-orange-600/60">
+                <Send className="h-5 w-5" />
+              </button>
+            </div>
+
+            {dualOpinionEnabled && (
+              <div className="relative mt-3 flex items-center space-x-2 bg-gray-800/50 backdrop-blur border border-orange-600/20 rounded-lg px-3 py-2 text-xs text-gray-400">
+                <AlertCircle className="h-3.5 w-3.5 text-orange-500" />
+                <span>Dual Opinion mode: You&apos;ll receive two expert perspectives - Evidence-Based and Contextual</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState, ReactNode } from 'react';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -8,7 +9,7 @@ interface AuthGateProps {
 
 export default function AuthGate({ children }: AuthGateProps) {
   const [ready, setReady] = useState(false);
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, ElementType } from 'react';
 import {
   Search,
   Home,
@@ -8,7 +8,6 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  Command,
   ArrowRight,
   Clock,
 } from 'lucide-react';
@@ -18,7 +17,7 @@ interface Command {
   id: string;
   label: string;
   description?: string;
-  icon: any;
+  icon: ElementType;
   action: () => void;
   keywords?: string[];
   category: string;
@@ -127,6 +126,19 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     return acc;
   }, {} as Record<string, Command[]>);
 
+  const addToRecentCommands = useCallback((cmdId: string) => {
+    setRecentCommands((prev) => {
+      const filtered = prev.filter((id) => id !== cmdId);
+      return [cmdId, ...filtered].slice(0, 5);
+    });
+  }, []);
+
+  const executeCommand = useCallback((cmd: Command) => {
+    cmd.action();
+    addToRecentCommands(cmd.id);
+    onClose();
+  }, [onClose, addToRecentCommands]);
+
   useEffect(() => {
     if (isOpen) {
       inputRef.current?.focus();
@@ -172,20 +184,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, selectedIndex, filteredCommands]);
-
-  function executeCommand(cmd: Command) {
-    cmd.action();
-    addToRecentCommands(cmd.id);
-    onClose();
-  }
-
-  function addToRecentCommands(cmdId: string) {
-    setRecentCommands((prev) => {
-      const filtered = prev.filter((id) => id !== cmdId);
-      return [cmdId, ...filtered].slice(0, 5);
-    });
-  }
+  }, [isOpen, selectedIndex, filteredCommands, onClose, executeCommand]);
 
   if (!isOpen) return null;
 
@@ -250,7 +249,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                   <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
                     {category}
                   </div>
-                  {cmds.map((cmd, index) => {
+                  {cmds.map((cmd) => {
                     const globalIndex = filteredCommands.indexOf(cmd);
                     return (
                       <CommandItem
@@ -277,7 +276,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700">
-                ↵
+                &#crarr;
               </kbd>
               Select
             </span>

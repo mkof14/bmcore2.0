@@ -9,15 +9,23 @@ interface OnboardingStep {
   content: React.ReactNode;
 }
 
+interface OnboardingData {
+  healthGoals: string[];
+  focusAreas: string[];
+  experience: string;
+  devices: string[];
+  notificationPreference: string;
+}
+
 interface OnboardingFlowProps {
   isOpen: boolean;
   onClose: () => void;
-  onComplete: (data: any) => void;
+  onComplete: (data: OnboardingData) => void;
 }
 
 export default function OnboardingFlow({ isOpen, onClose, onComplete }: OnboardingFlowProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<OnboardingData>({
     healthGoals: [] as string[],
     focusAreas: [] as string[],
     experience: '',
@@ -62,7 +70,7 @@ export default function OnboardingFlow({ isOpen, onClose, onComplete }: Onboardi
     {
       id: 'welcome',
       title: 'Welcome to BioMath Core',
-      description: 'Let\'s personalize your health journey',
+      description: "Let's personalize your health journey",
       icon: <Sparkles className="w-8 h-8 text-orange-500" />,
       content: (
         <div className="text-center py-8">
@@ -271,7 +279,7 @@ export default function OnboardingFlow({ isOpen, onClose, onComplete }: Onboardi
     },
     {
       id: 'complete',
-      title: 'You\'re all set!',
+      title: "You're all set!",
       description: 'Ready to start your health journey',
       icon: <Sparkles className="w-8 h-8 text-orange-500" />,
       content: (

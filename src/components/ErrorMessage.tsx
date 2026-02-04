@@ -1,4 +1,5 @@
-import { AlertCircle, XCircle, AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { AlertCircle, XCircle, AlertTriangle, RefreshCw, Home, LucideProps } from 'lucide-react';
+import { FC } from 'react';
 
 interface ErrorMessageProps {
   title?: string;
@@ -21,7 +22,7 @@ export default function ErrorMessage({
   onNavigateHome,
   className = ''
 }: ErrorMessageProps) {
-  const styles = {
+  const styles: Record<string, { bg: string; border: string; text: string; icon: FC<LucideProps>; iconColor: string; }> = {
     error: {
       bg: 'bg-red-50 dark:bg-red-900/20',
       border: 'border-red-200 dark:border-red-800',

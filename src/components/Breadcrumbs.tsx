@@ -24,7 +24,7 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
   useEffect(() => {
     const breadcrumbSchema = generateBreadcrumbs(fullItems);
     injectStructuredData(breadcrumbSchema);
-  }, [items]);
+  }, [fullItems]);
 
   return (
     <nav

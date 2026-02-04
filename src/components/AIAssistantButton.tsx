@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { MessageCircle, X } from 'lucide-react';
+import { useEffect } from 'react';
+import { X } from 'lucide-react';
 
 interface AIAssistantButtonProps {
   onClick: () => void;
@@ -7,15 +7,10 @@ interface AIAssistantButtonProps {
 }
 
 export default function AIAssistantButton({ onClick, isOpen }: AIAssistantButtonProps) {
-  const [pulse, setPulse] = useState(1);
 
   useEffect(() => {
     if (!isOpen) {
-      const interval = setInterval(() => {
-        setPulse(prev => (prev === 1 ? 1.1 : 1));
-      }, 2000);
-
-      return () => clearInterval(interval);
+      // This is just to ensure the component re-renders for the animation if needed
     }
   }, [isOpen]);
 

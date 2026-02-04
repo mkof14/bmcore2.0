@@ -1,13 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Users,
   Activity,
   TrendingUp,
   DollarSign,
   FileText,
-  Bell,
   Eye,
-  MousePointerClick,
   Clock,
   AlertTriangle,
 } from 'lucide-react';
@@ -35,11 +33,7 @@ export default function EnhancedDashboard() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | '90d'>('7d');
 
-  useEffect(() => {
-    fetchDashboardMetrics();
-  }, [timeRange]);
-
-  async function fetchDashboardMetrics() {
+  const fetchDashboardMetrics = useCallback(async () => {
     setLoading(true);
     try {
       const now = new Date();
@@ -127,11 +121,15 @@ export default function EnhancedDashboard() {
         criticalErrors: criticalErrors || 0,
       });
     } catch (error) {
-      console.error('Error fetching dashboard metrics:', error);
+      console.error('Error fetching dashboard metrics:', error as unknown);
     } finally {
       setLoading(false);
     }
-  }
+  }, [timeRange]);
+
+  useEffect(() => {
+    fetchDashboardMetrics();
+  }, [timeRange, fetchDashboardMetrics]);
 
   if (loading) {
     return (

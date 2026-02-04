@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { X, Gift, ArrowRight } from 'lucide-react';
 import { trackEvent } from '../lib/analytics';
 import { supabase } from '../lib/supabase';
@@ -14,7 +14,7 @@ export default function ExitIntentModal({ onClose, variant = 'discount' }: ExitI
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleDiscountSubmit = async (e: React.FormEvent) => {
+  const handleDiscountSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -28,13 +28,13 @@ export default function ExitIntentModal({ onClose, variant = 'discount' }: ExitI
       trackEvent('exit_intent_email_captured', { variant });
       setSubmitted(true);
     } catch (error) {
-      console.error('Failed to submit:', error);
+      console.error('Failed to submit:', error as unknown);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [email, variant]);
 
-  const handleFeedbackSubmit = async (e: React.FormEvent) => {
+  const handleFeedbackSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -48,11 +48,11 @@ export default function ExitIntentModal({ onClose, variant = 'discount' }: ExitI
       trackEvent('exit_intent_feedback_submitted', { variant });
       setSubmitted(true);
     } catch (error) {
-      console.error('Failed to submit:', error);
+      console.error('Failed to submit:', error as unknown);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [feedback, variant]);
 
   if (submitted) {
     return (
@@ -94,7 +94,7 @@ export default function ExitIntentModal({ onClose, variant = 'discount' }: ExitI
               <Gift className="h-8 w-8 text-orange-600 dark:text-orange-400" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-2">
-              Wait! Don't Leave Yet
+              Wait! Don&apos;t Leave Yet
             </h2>
             <p className="text-gray-600 dark:text-gray-300 text-center mb-6">
               Get <span className="text-orange-600 font-bold">20% OFF</span> your first month
@@ -157,34 +157,4 @@ export default function ExitIntentModal({ onClose, variant = 'discount' }: ExitI
       </div>
     </div>
   );
-}
-
-export function useExitIntent(delay = 1000): boolean {
-  const [showModal, setShowModal] = useState(false);
-
-  useEffect(() => {
-    const hasShown = sessionStorage.getItem('exit_intent_shown');
-    if (hasShown) return;
-
-    let timeout: NodeJS.Timeout;
-
-    const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY <= 0) {
-        timeout = setTimeout(() => {
-          setShowModal(true);
-          sessionStorage.setItem('exit_intent_shown', 'true');
-          trackEvent('exit_intent_triggered');
-        }, delay);
-      }
-    };
-
-    document.addEventListener('mouseleave', handleMouseLeave);
-
-    return () => {
-      document.removeEventListener('mouseleave', handleMouseLeave);
-      if (timeout) clearTimeout(timeout);
-    };
-  }, [delay]);
-
-  return showModal;
 }

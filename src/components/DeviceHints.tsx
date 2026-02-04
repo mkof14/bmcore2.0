@@ -1,4 +1,4 @@
-import { CheckCircle, TrendingUp, TrendingDown, Activity, Moon, Heart, Droplet, Gauge, Lightbulb, AlertCircle } from 'lucide-react';
+import { CheckCircle, TrendingUp, Activity, Moon, Heart, Droplet, Gauge, Lightbulb, AlertCircle } from 'lucide-react';
 
 export function ConnectionHint() {
   return (
@@ -8,7 +8,7 @@ export function ConnectionHint() {
         <div>
           <p className="text-sm text-gray-700 dark:text-gray-300">
             <strong className="text-blue-700 dark:text-blue-400">Connecting a device</strong> is a way to give the platform more precision.
-            We don't just collect numbers, we explain their meaning and connect them with your state and habits.
+            We don&apos;t just collect numbers, we explain their meaning and connect them with your state and habits.
           </p>
         </div>
       </div>
@@ -34,7 +34,7 @@ export function SuccessConnectionHint() {
         <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
         <p className="text-sm text-gray-700 dark:text-gray-300">
           <strong className="text-green-700 dark:text-green-400">Done.</strong> The next sync will happen automatically.
-          You don't need to do anything manually.
+          You don&apos;t need to do anything manually.
         </p>
       </div>
     </div>
@@ -51,7 +51,7 @@ export function FirstSyncSuccessHint() {
             Metrics received ✅
           </p>
           <p className="text-sm text-gray-700 dark:text-gray-300">
-            We'll track the trend, not just single values.
+            We&apos;ll track the trend, not just single values.
           </p>
         </div>
       </div>
@@ -71,8 +71,8 @@ export function WhyDevicesHint() {
             Why This Matters
           </h3>
           <p className="text-gray-700 dark:text-gray-300">
-            Devices help notice changes early, before symptoms appear. It's like a navigator for your body:
-            it suggests when you're overloaded, when recovery is happening, and what can be adjusted gently and timely.
+            Devices help notice changes early, before symptoms appear. It&apos;s like a navigator for your body:
+            it suggests when you&apos;re overloaded, when recovery is happening, and what can be adjusted gently and timely.
           </p>
         </div>
       </div>
@@ -192,8 +192,8 @@ export function AIAssistantTemplate() {
             <strong className="text-purple-700 dark:text-purple-400">Query Template:</strong>
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400 italic">
-            "Based on your latest device data, we see a trend ____________.
-            This is not a diagnosis, but an important signal. Would you like an explanation and recommendations?"
+            &quot;Based on your latest device data, we see a trend ____________.
+            This is not a diagnosis, but an important signal. Would you like an explanation and recommendations?&quot;
           </p>
         </div>
 
@@ -202,12 +202,12 @@ export function AIAssistantTemplate() {
             <strong className="text-purple-700 dark:text-purple-400">If user agrees:</strong>
           </p>
           <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-            <p>"I will explain in two ways:</p>
+            <p>&quot;I will explain in two ways:</p>
             <ul className="ml-4 space-y-1">
               <li>1. Strict physiological analysis (Opinion A)</li>
               <li>2. Behavioral and lifestyle explanation (Opinion B)</li>
             </ul>
-            <p>You can compare them and choose the suitable one."</p>
+            <p>You can compare them and choose the suitable one.&quot;</p>
           </div>
         </div>
 

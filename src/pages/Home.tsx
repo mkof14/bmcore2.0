@@ -82,21 +82,6 @@ export default function Home({ onNavigate }: HomeProps) {
               From sleep to cognition, from movement to mood — BioMath Core brings clarity to your
               health journey. Track, understand, and optimize your wellbeing through intelligent, real-time insights tailored to you.
             </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <button
-                onClick={() => onNavigate('signup')}
-                className="px-6 py-2.5 bg-gray-100/30 dark:bg-gray-800/30 hover:bg-gray-100/60 dark:hover:bg-gray-800/60 border border-gray-300/30 dark:border-gray-700/30 hover:border-gray-300/50 dark:hover:border-gray-600/50 rounded-lg text-orange-600 dark:text-orange-500 text-lg font-semibold cursor-pointer hover:text-orange-700 dark:hover:text-orange-400 transition-all duration-300"
-              >
-                Start Free Today
-              </button>
-              <span className="text-gray-400 dark:text-gray-500 text-2xl">•</span>
-              <button
-                onClick={() => onNavigate('learning')}
-                className="px-6 py-2.5 bg-gray-100/30 dark:bg-gray-800/30 hover:bg-gray-100/60 dark:hover:bg-gray-800/60 border border-gray-300/30 dark:border-gray-700/30 hover:border-gray-300/50 dark:hover:border-gray-600/50 rounded-lg text-orange-700 dark:text-orange-400 text-lg font-semibold cursor-pointer hover:text-orange-800 dark:hover:text-orange-300 transition-all duration-300"
-              >
-                Explore Learning Center
-              </button>
-            </div>
           </div>
         </div>
       </section>

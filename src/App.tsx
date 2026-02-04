@@ -3,13 +3,13 @@ import { supabase } from './lib/supabase';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AIAssistantButton from './components/AIAssistantButton';
-import AIHealthAssistant from './components/AIHealthAssistantV2';
+import AIHealthAssistant from './components/AIHealthAssistant';
 import CookieBanner from './components/CookieBanner';
-import PWAInstallPrompt, { PWAUpdatePrompt } from './components/PWAInstallPrompt';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 import CommandPalette from './components/CommandPalette';
 import { LoadingPage } from './components/LoadingSpinner';
 import { analytics, identifyUser } from './lib/analytics';
-import { performanceMonitor } from './lib/performance';
 import { useServiceWorker } from './hooks/useServiceWorker';
 import AdminGate from './components/AdminGate';
 import Home from './pages/Home';
@@ -62,8 +62,6 @@ function App() {
   const [serviceDetailId, setServiceDetailId] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [hasSubscription, setHasSubscription] = useState(false);
-  const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const { isUpdateAvailable, updateServiceWorker } = useServiceWorker();
@@ -71,7 +69,6 @@ function App() {
   // Check subscription status
   const checkSubscription = async (userId: string) => {
     try {
-      setIsCheckingSubscription(true);
       const { data } = await supabase
         .from('user_subscriptions')
         .select('status')
@@ -79,15 +76,11 @@ function App() {
         .in('status', ['active', 'trialing'])
         .maybeSingle();
 
-      setHasSubscription(!!data);
       return !!data;
     } catch (error) {
       console.error('Error checking subscription:', error);
-      setHasSubscription(false);
       return false;
-    } finally {
-      setIsCheckingSubscription(false);
-    }
+    } 
   };
 
   useEffect(() => {
@@ -108,9 +101,7 @@ function App() {
           email: session.user.email
         });
         checkSubscription(session.user.id);
-      } else {
-        setHasSubscription(false);
-      }
+      } 
     });
 
     return () => subscription.unsubscribe();

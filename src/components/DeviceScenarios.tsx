@@ -94,7 +94,7 @@ function ScenarioCard({ title, description, aiResponse, secondOpinion, type, ico
             </p>
           </div>
           <p className="text-sm text-gray-700 dark:text-gray-300 italic">
-            "{aiResponse}"
+            &quot;{aiResponse}&quot;
           </p>
         </div>
 
@@ -104,7 +104,7 @@ function ScenarioCard({ title, description, aiResponse, secondOpinion, type, ico
               Предложение второго мнения:
             </p>
             <p className="text-sm text-gray-700 dark:text-gray-300 italic">
-              "{secondOpinion}"
+              &quot;{secondOpinion}&quot;
             </p>
           </div>
         )}
@@ -280,8 +280,8 @@ export function GeneralScenarioLogic() {
                 <strong className="text-teal-700 dark:text-teal-400">Психологически безопасный язык:</strong>
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Платформа ни разу не формулирует это как "болезнь" или "опасность".
-                Только как "тенденцию", "сигнал", "адаптацию" или "ресурс".
+                Платформа ни разу не формулирует это как &quot;болезнь&quot; или &quot;опасность&quot;.
+                Только как &quot;тенденцию&quot;, &quot;сигнал&quot;, &quot;адаптацию&quot; или &quot;ресурс&quot;.
                 Это делает взаимодействие психологически безопасным и устойчивым.
               </p>
             </div>

@@ -1,5 +1,7 @@
+
 import { Clock, Zap, FileText, Sparkles, Bell, Settings, TrendingUp, AlertCircle, BookOpen } from 'lucide-react';
 import DeviceScenarios from './DeviceScenarios';
+import { useTranslation } from 'react-i18next';
 
 interface EducationSection {
   icon: typeof Clock;
@@ -9,6 +11,7 @@ interface EducationSection {
 }
 
 export function RealTimeBehaviorSection() {
+  const { t } = useTranslation();
   return (
     <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border border-green-200 dark:border-green-800">
       <div className="flex items-start space-x-4">
@@ -17,18 +20,14 @@ export function RealTimeBehaviorSection() {
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Режимы передачи данных
+            {t('deviceEducation.realTimeBehavior.title')}
           </h3>
           <p className="text-gray-700 dark:text-gray-300 mb-3">
-            После подключения устройство может передавать данные либо ежедневно, либо несколько раз в день,
-            либо в реальном времени — в зависимости от типа сенсора и выбранных настроек.
+            {t('deviceEducation.realTimeBehavior.description')}
           </p>
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-green-200 dark:border-green-700">
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              <strong className="text-green-700 dark:text-green-400">Непрерывный мониторинг:</strong> Если устройство поддерживает
-              непрерывный мониторинг (например, Dexcom, Libre или некоторые браслеты), BioMath Core может реагировать сразу,
-              когда показатель выходит за нормальные пределы. Реакция не является медицинским диагнозом — это объяснение тренда
-              и подсказка, как скорректировать поведение.
+              <strong className="text-green-700 dark:text-green-400">{t('deviceEducation.realTimeBehavior.continuousMonitoring.title')}</strong> {t('deviceEducation.realTimeBehavior.continuousMonitoring.description')}
             </p>
           </div>
         </div>
@@ -38,6 +37,7 @@ export function RealTimeBehaviorSection() {
 }
 
 export function DataInfluenceReportsSection() {
+  const { t } = useTranslation();
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
       <div className="flex items-start space-x-4">
@@ -46,12 +46,10 @@ export function DataInfluenceReportsSection() {
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Влияние на отчеты
+            {t('deviceEducation.dataInfluenceReports.title')}
           </h3>
           <p className="text-gray-700 dark:text-gray-300">
-            Когда пользователь создает новый отчет, подключенные устройства автоматически дают дополнительные контекстные данные.
-            Это позволяет AI формировать выводы не только на основе анкет и слов пользователя, но и на основе реальных
-            физиологических сигналов. Отчеты становятся точнее и персональнее.
+            {t('deviceEducation.dataInfluenceReports.description')}
           </p>
         </div>
       </div>
@@ -60,6 +58,7 @@ export function DataInfluenceReportsSection() {
 }
 
 export function DataInfluenceAISection() {
+  const { t } = useTranslation();
   return (
     <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-800">
       <div className="flex items-start space-x-4">
@@ -68,18 +67,14 @@ export function DataInfluenceAISection() {
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Влияние на AI Assistant
+            {t('deviceEducation.dataInfluenceAI.title')}
           </h3>
           <p className="text-gray-700 dark:text-gray-300 mb-3">
-            В чате AI Assistant может опираться на текущие показатели. Если, например, HRV падает несколько дней подряд,
-            AI подсказывает, что нервная система перегружена, и рекомендует восстановление. Если глюкоза нестабильна,
-            AI объясняет почему и какие шаги помогут сгладить скачки.
+            {t('deviceEducation.dataInfluenceAI.description')}
           </p>
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              <strong className="text-purple-700 dark:text-purple-400">Второе мнение:</strong> Если включено второе мнение,
-              оба мнения рассматривают одни и те же данные, но объясняют их разными подходами: строгий физиологический анализ
-              и адаптивное поведенческое объяснение.
+              <strong className="text-purple-700 dark:text-purple-400">{t('deviceEducation.dataInfluenceAI.secondOpinion.title')}</strong> {t('deviceEducation.dataInfluenceAI.secondOpinion.description')}
             </p>
           </div>
         </div>
@@ -89,6 +84,7 @@ export function DataInfluenceAISection() {
 }
 
 export function AlertsNudgesSection() {
+  const { t } = useTranslation();
   return (
     <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl p-6 border border-orange-200 dark:border-orange-800">
       <div className="flex items-start space-x-4">
@@ -97,17 +93,14 @@ export function AlertsNudgesSection() {
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Мягкие подсказки и нуджи
+            {t('deviceEducation.alertsNudges.title')}
           </h3>
           <p className="text-gray-700 dark:text-gray-300 mb-3">
-            Пользователь может включить мягкие нуджи — короткие подсказки, когда показатели идут в неблагоприятном направлении.
-            Это не тревога и не диагноз. Это мягкое напоминание, что стоит сделать шаг в сторону стабилизации: отдохнуть,
-            подышать, выпить воды, прогуляться или снизить нагрузку.
+            {t('deviceEducation.alertsNudges.description')}
           </p>
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-orange-200 dark:border-orange-700">
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              <strong className="text-orange-700 dark:text-orange-400">Позитивное подкрепление:</strong> Если показатели резко
-              улучшаются — мы тоже сообщаем. Это укрепляет мотивацию и формирует позитивное подкрепление.
+              <strong className="text-orange-700 dark:text-orange-400">{t('deviceEducation.alertsNudges.positiveReinforcement.title')}</strong> {t('deviceEducation.alertsNudges.positiveReinforcement.description')}
             </p>
           </div>
         </div>
@@ -117,6 +110,7 @@ export function AlertsNudgesSection() {
 }
 
 export function UserSettingsSection() {
+  const { t } = useTranslation();
   return (
     <div className="bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-900/40 dark:to-slate-900/40 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
       <div className="flex items-start space-x-4">
@@ -125,43 +119,43 @@ export function UserSettingsSection() {
         </div>
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-            Настройки синхронизации
+            {t('deviceEducation.userSettings.title')}
           </h3>
           <p className="text-gray-700 dark:text-gray-300 mb-4">
-            Пользователь сам решает, какие данные использовать и в каком режиме:
+            {t('deviceEducation.userSettings.description')}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-2 mb-1">
                 <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <span className="font-semibold text-gray-900 dark:text-white text-sm">Только ночью</span>
+                <span className="font-semibold text-gray-900 dark:text-white text-sm">{t('deviceEducation.userSettings.onlyAtNight.title')}</span>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Для анализа сна</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('deviceEducation.userSettings.onlyAtNight.description')}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-2 mb-1">
                 <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <span className="font-semibold text-gray-900 dark:text-white text-sm">Только утром</span>
+                <span className="font-semibold text-gray-900 dark:text-white text-sm">{t('deviceEducation.userSettings.onlyInTheMorning.title')}</span>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Для анализа восстановления</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('deviceEducation.userSettings.onlyInTheMorning.description')}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-2 mb-1">
                 <Clock className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                <span className="font-semibold text-gray-900 dark:text-white text-sm">Каждые несколько часов</span>
+                <span className="font-semibold text-gray-900 dark:text-white text-sm">{t('deviceEducation.userSettings.everyFewHours.title')}</span>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Общая динамика</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('deviceEducation.userSettings.everyFewHours.description')}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-2 mb-1">
                 <Zap className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                <span className="font-semibold text-gray-900 dark:text-white text-sm">Непрерывно</span>
+                <span className="font-semibold text-gray-900 dark:text-white text-sm">{t('deviceEducation.userSettings.continuously.title')}</span>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Если сенсор поддерживает</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('deviceEducation.userSettings.continuously.description')}</p>
             </div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
-            Настройки можно менять без повторного подключения устройства.
+            {t('deviceEducation.userSettings.footer')}
           </p>
         </div>
       </div>
@@ -170,6 +164,7 @@ export function UserSettingsSection() {
 }
 
 export function WhyDevicesMatterSection() {
+  const { t } = useTranslation();
   return (
     <div className="bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-xl p-6 border-2 border-teal-200 dark:border-teal-800">
       <div className="flex items-start space-x-4">
@@ -178,11 +173,10 @@ export function WhyDevicesMatterSection() {
         </div>
         <div>
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-            Почему устройства важны
+            {t('deviceEducation.whyDevicesMatter.title')}
           </h3>
           <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-            Устройства убирают догадки. Здоровье становится не набором ощущений, а измеримым процессом.
-            Это помогает замечать не симптомы, а ранние сигналы, пока всё ещё можно скорректировать без стресса и вмешательств.
+            {t('deviceEducation.whyDevicesMatter.description')}
           </p>
         </div>
       </div>
@@ -191,18 +185,17 @@ export function WhyDevicesMatterSection() {
 }
 
 export function AdvancedBehaviorNote() {
+  const { t } = useTranslation();
   return (
     <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 border border-gray-300 dark:border-gray-700">
       <div className="flex items-start space-x-3">
         <AlertCircle className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
         <div>
           <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
-            Продвинутая аналитика
+            {t('deviceEducation.advancedBehaviorNote.title')}
           </h4>
           <p className="text-xs text-gray-600 dark:text-gray-400">
-            Некоторые устройства могут отдавать больше параметров, чем другие. Платформа не должна навязывать дополнительный
-            интерфейс: если есть лишние данные, они обогащают аналитику, но не усложняют использование. Интерфейс остаётся
-            одинаковым, независимо от глубины данных.
+            {t('deviceEducation.advancedBehaviorNote.description')}
           </p>
         </div>
       </div>
@@ -211,6 +204,7 @@ export function AdvancedBehaviorNote() {
 }
 
 export default function DeviceEducation() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       <WhyDevicesMatterSection />
@@ -231,11 +225,10 @@ export default function DeviceEducation() {
           </div>
           <div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              Примеры реальных сценариев
+              {t('deviceEducation.realScenarios.title')}
             </h3>
             <p className="text-gray-700 dark:text-gray-300">
-              Как платформа реагирует на изменения в данных устройств. Все реакции сформулированы в мягкой,
-              неалармистской форме — как подсказки, а не диагнозы.
+              {t('deviceEducation.realScenarios.description')}
             </p>
           </div>
         </div>

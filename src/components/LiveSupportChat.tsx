@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, X, Loader } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSession } from '../hooks/useSession';
@@ -29,101 +29,10 @@ export default function LiveSupportChat({ isOpen, onClose }: LiveSupportChatProp
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const user = useSession();
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    if (isOpen && user) {
-      initializeChat();
-    }
-  }, [isOpen, user]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const initializeChat = async () => {
-    if (!user) return;
-
-    setLoading(true);
-    try {
-      const { data: existingRooms } = await supabase
-        .from('chat_rooms')
-        .select('id')
-        .eq('type', 'support')
-        .eq('created_by', user.id)
-        .maybeSingle();
-
-      let currentRoomId: string;
-
-      if (existingRooms) {
-        currentRoomId = existingRooms.id;
-      } else {
-        const { data: newRoom, error: roomError } = await supabase
-          .from('chat_rooms')
-          .insert({
-            name: 'Support Chat',
-            type: 'support',
-            created_by: user.id,
-          })
-          .select()
-          .single();
-
-        if (roomError) throw roomError;
-        currentRoomId = newRoom.id;
-
-        await supabase.from('chat_participants').insert({
-          room_id: currentRoomId,
-          user_id: user.id,
-          role: 'member',
-        });
-      }
-
-      setRoomId(currentRoomId);
-      await loadMessages(currentRoomId);
-      setupRealtimeSubscriptions(currentRoomId);
-    } catch (error) {
-      console.error('Error initializing chat:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMessages = async (roomId: string) => {
-    const { data, error } = await supabase
-      .from('chat_messages')
-      .select(`
-        id,
-        content,
-        user_id,
-        created_at,
-        profiles:user_id (
-          first_name,
-          last_name,
-          is_admin
-        )
-      `)
-      .eq('room_id', roomId)
-      .order('created_at', { ascending: true })
-      .limit(100);
-
-    if (!error && data) {
-      const formattedMessages = data.map((msg: any) => ({
-        id: msg.id,
-        content: msg.content,
-        user_id: msg.user_id,
-        created_at: msg.created_at,
-        sender_name: msg.profiles
-          ? `${msg.profiles.first_name || ''} ${msg.profiles.last_name || ''}`.trim() || 'User'
-          : 'User',
-        is_support: msg.profiles?.is_admin || false,
-      }));
-      setMessages(formattedMessages);
-    }
-  };
-
-  const setupRealtimeSubscriptions = (roomId: string) => {
+  }, []);
+  const setupRealtimeSubscriptions = useCallback((roomId: string) => {
     const messageChannel = supabase
       .channel(`room:${roomId}:messages`)
       .on(
@@ -212,7 +121,98 @@ export default function LiveSupportChat({ isOpen, onClose }: LiveSupportChatProp
       messageChannel.unsubscribe();
       typingChannel.unsubscribe();
     };
+  }, [user]);
+  const initializeChat = useCallback(async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data: existingRooms } = await supabase
+        .from('chat_rooms')
+        .select('id')
+        .eq('type', 'support')
+        .eq('created_by', user.id)
+        .maybeSingle();
+
+      let currentRoomId: string;
+
+      if (existingRooms) {
+        currentRoomId = existingRooms.id;
+      } else {
+        const { data: newRoom, error: roomError } = await supabase
+          .from('chat_rooms')
+          .insert({
+            name: 'Support Chat',
+            type: 'support',
+            created_by: user.id,
+          })
+          .select()
+          .single();
+
+        if (roomError) throw roomError;
+        currentRoomId = newRoom.id;
+
+        await supabase.from('chat_participants').insert({
+          room_id: currentRoomId,
+          user_id: user.id,
+          role: 'member',
+        });
+      }
+
+      setRoomId(currentRoomId);
+      await loadMessages(currentRoomId);
+      setupRealtimeSubscriptions(currentRoomId);
+    } catch (error) {
+      console.error('Error initializing chat:', error as unknown);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, setupRealtimeSubscriptions]);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      initializeChat();
+    }
+  }, [isOpen, user, initializeChat]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  const loadMessages = async (roomId: string) => {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select(`
+        id,
+        content,
+        user_id,
+        created_at,
+        profiles:user_id (
+          first_name,
+          last_name,
+          is_admin
+        )
+      `)
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: true })
+      .limit(100);
+
+    if (!error && data) {
+      const formattedMessages = data.map((msg: { id: string; content: string; user_id: string; created_at: string; profiles: { first_name: string; last_name: string; is_admin: boolean; }; }) => ({
+        id: msg.id,
+        content: msg.content,
+        user_id: msg.user_id,
+        created_at: msg.created_at,
+        sender_name: msg.profiles
+          ? `${msg.profiles.first_name || ''} ${msg.profiles.last_name || ''}`.trim() || 'User'
+          : 'User',
+        is_support: msg.profiles?.is_admin || false,
+      }));
+      setMessages(formattedMessages);
+    }
   };
+
+  
 
   const handleTyping = async () => {
     if (!roomId || !user) return;

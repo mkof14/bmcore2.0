@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { CheckCircle2, AlertTriangle, Merge, FileText, Target, ChevronDown, ChevronUp, BookOpen, Heart } from 'lucide-react';
-import type { Opinion, OpinionDiff, MergedOpinion } from '../lib/dualOpinionEngine';
+import { Opinion, OpinionDiff, MergedOpinion, mergeOpinions, Recommendation } from '../lib/dualOpinionEngine';
 
 interface DualOpinionViewProps {
   opinionA: Opinion;
@@ -8,7 +8,7 @@ interface DualOpinionViewProps {
   diff: OpinionDiff;
   onMerge: (preference: 'A' | 'B' | 'merge') => void;
   onCreateReport: () => void;
-  onAddGoals: (recommendations: any[]) => void;
+  onAddGoals: (recommendations: Recommendation[]) => void;
 }
 
 export default function DualOpinionView({
@@ -22,10 +22,10 @@ export default function DualOpinionView({
   const [showDiff, setShowDiff] = useState(true);
   const [mergedView, setMergedView] = useState<MergedOpinion | null>(null);
 
-  const handleMerge = (preference: 'A' | 'B' | 'merge') => {
+  const handleMerge = useCallback((preference: 'A' | 'B' | 'merge') => {
     onMerge(preference);
     setMergedView(null);
-  };
+  }, [onMerge]);
 
   if (mergedView) {
     return (
@@ -294,7 +294,6 @@ export default function DualOpinionView({
         </button>
         <button
           onClick={() => {
-            const { mergeOpinions } = require('../lib/dualOpinionEngine');
             const merged = mergeOpinions(opinionA, opinionB, 'merge');
             setMergedView(merged);
           }}

@@ -66,13 +66,7 @@ export function LoadingButton({
   className = '',
   disabled,
   ...props
-}: {
-  loading: boolean;
-  children: React.ReactNode;
-  className?: string;
-  disabled?: boolean;
-  [key: string]: any;
-}) {
+}: { loading: boolean } & React.ComponentPropsWithoutRef<'button'>) {
   return (
     <button
       {...props}
