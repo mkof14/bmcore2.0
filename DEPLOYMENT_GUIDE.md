@@ -54,6 +54,38 @@ git push -u origin main
 
 ## Step 4: Deploy to Vercel
 
+### 4.0 Vercel Environment Checklist (Quick)
+
+Set these in **Vercel → Project → Settings → Environment Variables**.
+
+Required for all environments (`Production`, `Preview`, `Development`):
+
+```bash
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+```
+
+Recommended for all environments:
+
+```bash
+VITE_APP_URL=https://YOUR_DOMAIN_OR_VERCEL_URL
+VITE_CONFIG_LOCK=0
+VITE_REQUIRE_EMAIL_VERIFICATION=1
+```
+
+Required if payments are enabled:
+
+```bash
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_OR_pk_live_KEY
+```
+
+Optional observability:
+
+```bash
+VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+VITE_SENTRY_DSN=https://xxxxx@o0.ingest.sentry.io/0
+```
+
 ### 4.1 Import Project
 1. Go to https://vercel.com/new
 2. Click **"Import Git Repository"**
@@ -62,9 +94,29 @@ git push -u origin main
 
 ### 4.2 Configure Project
 - **Framework Preset:** Vite
-- **Build Command:** `npm run build`
+- **Build Command:** `npm run vercel-build`
 - **Output Directory:** `dist`
-- **Install Command:** `npm install`
+- **Install Command:** `npm ci`
+- **Node.js Version:** `20.x`
+
+### 4.2.1 Preflight Check (recommended)
+Before first production deploy, run locally:
+
+```bash
+npm ci
+npm run build
+```
+
+If this succeeds locally, Vercel build settings are aligned.
+
+### 4.2.2 Post-Deploy Smoke Check
+
+After deploy:
+
+1. Open `/` and verify app loads without blank screen.
+2. Open `/pricing` and verify plan buttons render.
+3. Sign in flow works on `/sign-in` and `/sign-up`.
+4. Open browser console and ensure no `Missing Supabase environment variables` error.
 
 ### 4.3 Add Environment Variables
 

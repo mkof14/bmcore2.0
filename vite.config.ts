@@ -29,13 +29,9 @@ export default defineConfig({
   },
   build: {
     sourcemap: false,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.debug', 'console.info']
-      }
+    minify: 'esbuild',
+    esbuild: {
+      drop: ['console', 'debugger']
     },
     rollupOptions: {
       output: {
